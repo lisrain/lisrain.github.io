@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <title>随机号数抽取</title>
-<script src="jquery-1.4.1.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <style>
 body {
 	background-color:aliceblue;
@@ -78,128 +78,80 @@ h1 {
 </div>
 
 <script>
- // 模拟后台数据
-var arr = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10",
-     "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21",
-     "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32",
-     "33", "34", "35", "36", "37", "38", "39", "40", "41", "42", "43",
-     "44", "45", "46", "47", "48", "49", "50",
-];
+var MAX_NUMBER = 50;
+var EXCLUDED_NUMBERS = [1, 4, 5, 33]; // 需要排除的数字
+var fullNumbers = []; // 用于展示的完整数字列表
+var drawNumbers = []; // 实际参与抽取的数字列表
 
- var orgArrCount = arr.length;
- var currentSelectNum = 0;
+// 初始化数字列表
+for (var i = 1; i <= MAX_NUMBER; i++) {
+    fullNumbers.push(i.toString().padStart(2, '0'));
+}
+drawNumbers = fullNumbers.filter(num => !EXCLUDED_NUMBERS.includes(parseInt(num)));
 
+var orgArrCount = fullNumbers.length;
+var currentSelectNum = -1; // 初始化当前选中数字索引
 
+initForm();
 
+function initForm() {
+    // 动态设置选择人的高度和创建展示层
+    $("#selectedName").css("height", orgArrCount / 3 * 40 + 120 + "px");
+    dynamicCreateBox(fullNumbers);
+}
 
- initForm();
+function dynamicCreateBox(numbers) {
+    numbers.forEach(function(number) {
+        var div = $("<div>").text(number).addClass("nameBox");
+        $("#leftBox").append(div);
+    });
+}
 
- // 初始化表单
- function initForm() {
-     // 动态设置选择人的高度
-     var selectedNameHeight = orgArrCount / 3 * 40 + 120;
-     $("#selectedName").css("height", selectedNameHeight + "px");
-     // 动态创建图层
-     dynamicCreateBox();
- }
+function clearBoxColor() {
+    $("#leftBox .nameBox").css("background-color", "");
+}
 
- // 动态创建层
- function dynamicCreateBox() {
-     for (var i = 0; i < arr.length; i++) {
-         var div = document.createElement("div");
-         div.innerText = arr[i];
-         div.className = "nameBox";
-         $("#leftBox").append(div);
-     };
- }
+function setBoxColor(index) {
+    $("#leftBox .nameBox").eq(index).css("background-color", "skyblue");
+}
 
- // 清空小方格颜色
- function clearBoxColor() {
-     $("#leftBox").children("div").each(function() {
-         $(this).css("background-color", "");
-     });
- }
+function appendSelectedName(number) {
+    $("<div>").text(number).addClass("nameBox").appendTo($("#selectedName"));
+}
 
- // 设置选中小方格颜色
- function setBoxColor() {
-     $("#leftBox").children("div").each(function() {
-         var thisText = ($(this).text());
-         var selectedName = arr[currentSelectNum];
+var timeId;
 
-         if (thisText == selectedName) {
-             $(this).css("background-color", "skyblue");
-         }
-     });
- }
+$('#btn').click(function() {
+    var remainingCount = drawNumbers.length;
+    if (remainingCount < 1) {
+        alert("所有有效的数字都已经抽取完毕，请刷新页面重置。");
+        clearBoxColor();
+        return;
+    }
+    
+    if (this.value === "走起！") {
+    	timeId = setInterval(function() {
+        		clearBoxColor();
+        		var selected = drawNumbers[Math.floor(Math.random() * remainingCount)];
+        		currentSelectNum = fullNumbers.indexOf(selected); // 记录当前选中数字在fullNumbers中的索引
+        		setBoxColor(currentSelectNum);
+   	 }, 10); // 放慢速度以便观察
+    	this.value = "停！";
+    } else {
+    	clearInterval(timeId);
+    	// 确保添加到中奖名单的数字与当前高亮显示的数字相对应
+    	var selectedNumberForDisplay = fullNumbers[currentSelectNum];
+    	appendSelectedName(selectedNumberForDisplay);
 
- function appendSelectedName() {
-     var div = document.createElement("div");
-     div.innerText = arr[currentSelectNum];
-     div.className = "nameBox";
-     $("#selectedName").append(div);
- }
- 
- //排除列表，为了整体好看，在后台排除，不影响前台显示            
-//arr.splice(5, 1);
-//arr.splice(1, 1);
-//arr.splice(0, 1);
+    	// 从drawNumbers中找到并移除已经选择的数字
+    	var indexToRemove = drawNumbers.indexOf(selectedNumberForDisplay);
+    	if (indexToRemove > -1) { // 确保找到该数字
+        	drawNumbers.splice(indexToRemove, 1); // 移除找到的数字
+    	}
 
-
- $('#btn').click(function() {
-     var curentCount = arr.length;
-     if (curentCount < 1) {
-         alert("已经全部抽完了，请刷新网页即可清空历史记录");
-         // 清空所有层的颜色
-         clearBoxColor();
-         return;
-     }
-     // 监视按钮的状态
-     if (this.value === "走起！") {
-         // 定时针
-         timeId = setInterval(function() {
-             // 清空所有层的颜色
-             clearBoxColor();
-
-             //随机生成一个数
-             var num = Math.floor((Math.random() * 233333)) % curentCount
-             currentSelectNum = num;
-
-             // 设置选中小方格颜色
-             setBoxColor();
-         }, 10);
-         this.value = "停！";
-     } else {
-         // 清除计时器
-         clearInterval(timeId);
-
-         // 添加选中人
-         appendSelectedName();
-
-         // 移除
-         arr.splice(currentSelectNum, 1);
-         this.value = "走起！";
-     }
- });
-
- // 获取时间的函数
- getTime();
- setInterval(getTime, 10)
-
- function getTime() {
-     var day = new Date();
-     var year = day.getFullYear(); //年
-     var month = day.getMonth() + 1; //月
-     var dat = day.getDate(); //日
-     var hour = day.getHours(); //小时
-     var minitue = day.getMinutes(); //分钟
-     var second = day.getSeconds(); //秒
-     month = month < 10 ? "0" + month : month;
-     dat = dat < 10 ? "0" + dat : dat;
-     hour = hour < 10 ? "0" + hour : hour;
-     minitue = minitue < 10 ? "0" + minitue : minitue;
-     second = second < 10 ? "0" + second : second;
-     $("#span").innerText = year + "-" + month + "-" + dat + " " + hour + ":" + minitue + ":" + second
- }
+    	this.value = "走起！";
+    }
+});
 </script>
 
 </body>
